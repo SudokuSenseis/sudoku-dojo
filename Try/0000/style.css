@@ -1,0 +1,832 @@
+/* Clean CSS file - NO JavaScript allowed */
+
+/* Reset and base styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f5f5f5;
+  /* Ensure consistent zoom behavior */
+  zoom: 1;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
+/* Grid container */
+#container {
+  display: flex;
+  align-items: flex-start;
+  gap: 40px;
+  margin: 20px;
+}
+
+/* Sudoku grid */
+#sudoku-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 48px);
+  grid-template-rows: repeat(9, 48px);
+  background: #eee;
+  padding: 5px;
+  border: 4px solid #000;
+  box-sizing: border-box;
+  width: fit-content;
+  margin-top: 3%;
+  transition: filter 0.3s ease;
+  transform: scale(1.1);
+  transform-origin: top left;
+}
+
+#sudoku-grid.blurred {
+  filter: blur(5px);
+  pointer-events: none;
+}
+
+/* Striped background for Solid, Corner, and Center buttons */
+#solidButton,
+#cornerButton,
+#centerButton {
+  position: relative;
+  overflow: hidden;
+  background: repeating-linear-gradient(
+    90deg,
+    #FFFFFF 0% 16.66%,
+    #FFFF00 16.66% 33.32%,
+    #FFA500 33.32% 50%,
+    #00FF00 50% 66.64%,
+    #5B9BD5 66.64% 83.3%,  /* Lighter blue color */
+    #9966CC 83.3% 100%
+  );
+  background-size: 100% 100%;
+  color: #333;
+  font-weight: bold;
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
+  border: 1px solid #999 !important;
+}
+
+/* Cell styles */
+.cell {
+  width: 48px;
+  height: 48px;
+  background: #fff;
+  border: 1px solid #222;
+  box-sizing: border-box;
+  transition: background-color 0.2s ease;
+  text-align: center;
+  font-size: 1.8em;
+  line-height: 48px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.cell.selected {
+  border: 2px solid #0078d7 !important;
+  background: #e6f0ff;
+  z-index: 1;
+}
+
+/* Highlight for same number cells */
+.cell.highlight-same-number {
+  background-color: #e6e6ff;
+  outline: 2px solid #9c27b0;
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+/* Combined highlight for selected and same number */
+.cell.selected.highlight-same-number {
+  background-color: #e6e6ff;
+  outline: 2px solid #9c27b0;
+  box-shadow: 0 0 0 2px #e1bee7;
+}
+
+/* Color for preset (imported) numbers */
+.cell.preset {
+  color: black !important;
+}
+
+/* Color for user-filled numbers */
+.cell:not(.preset) {
+  color: blue !important;
+}
+
+/* CONFLICT HIGHLIGHTING - Must come AFTER other color rules to override them */
+.cell.duplicate {
+  color: red !important;
+}
+
+/* Block borders */
+.cell.block-bottom { border-bottom: 3px solid #000 !important; }
+.cell.block-right { border-right: 3px solid #000 !important; }
+.cell.block-top { border-top: 3px solid #000 !important; }
+.cell.block-left { border-left: 3px solid #000 !important; }
+
+/* Subcell styles (corner marks) */
+.subcell {
+  position: absolute;
+  width: 33.33%;
+  height: 33.33%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.5em;
+  box-sizing: border-box;
+  pointer-events: none;
+  color: #666;
+}
+
+/* Subcell positions */
+.sc1 { top: 0; left: 0; }
+.sc2 { top: 0; left: 33.33%; }
+.sc3 { top: 0; right: 0; }
+.sc4 { top: 33.33%; left: 0; }
+.sc5 { top: 33.33%; left: 33.33%; }
+.sc6 { top: 33.33%; right: 0; }
+.sc7 { bottom: 0; left: 0; }
+.sc8 { bottom: 0; left: 33.33%; }
+.sc9 { bottom: 0; right: 0; }
+
+/* Center marks */
+.merged-center {
+  position: absolute;
+  top: 33.33%;
+  left: 0;
+  width: 100%;
+  height: 33.33%;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  justify-content: center;
+  font-size: 0.5em;
+  box-sizing: border-box;
+  pointer-events: none;
+  color: #666;
+}
+
+.center-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Conflicting pencil marks */
+.subcell.conflict,
+.center-number.conflict {
+  color: red !important;
+  font-weight: bold;
+}
+
+/* Button panel */
+#button-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  min-height: 100%;
+  padding-top: 46px;
+  margin-left: 20px;
+}
+
+/* Ensure zoom stability for absolute positioned elements */
+#clearGridBtn {
+  /* Use em units instead of px for better zoom scaling */
+  right: -3.125em !important; /* -50px converted to em (50/16) */
+  top: 0.3125em !important;   /* 5px converted to em (5/16) */
+}
+
+/* Color buttons */
+#color-buttons {
+  display: flex;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 8px 0;
+  margin-bottom: 8px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: transparent;
+  z-index: 5;
+  height: 46px;
+}
+
+.color-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid #333;
+  cursor: pointer;
+}
+
+/* Main buttons */
+#main-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) 48px 48px;
+  grid-template-rows: repeat(8, 1fr);
+  gap: 8px;
+  position: relative;
+  margin-top: 0;
+}
+
+.side-btn {
+  font-size: 1em;
+  cursor: pointer;
+  margin: 0;
+  position: relative;
+  height: 40px;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+  background: #f0f0f0;
+  color: #333;
+}
+
+.side-btn:hover {
+  background: #e0e0e0;
+}
+
+.side-btn.selected {
+  border-color: #0078d7;
+  box-shadow: 0 0 0 2px #0078d7;
+  background: #e6f0ff;
+}
+
+.side-btn.f-col, 
+.side-btn.g-col {
+  margin-left: 11px; /* Reduced from 16px to 11px to move 5px left */
+  width: 40px;
+}
+
+#del1Btn {
+  margin-left: 6px !important; /* 11px - 5px = 6px */
+}
+
+#undoBtn, #redoBtn, #del3Btn {
+  border: 2px solid #808080 !important; /* Grey frame */
+}
+
+#undoBtn, #redoBtn {
+  font-size: 2em; /* Increase font size for larger icons */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0; /* Remove default padding */
+  line-height: 1; /* Reset line height */
+  position: relative;
+  width: 40px; /* Fixed width to match icon size */
+  height: 100%;
+  margin: 0 0 0 10px; /* Add left margin for horizontal spacing */
+  border: none;
+  background: none;
+  cursor: pointer;
+  min-width: unset; /* Override any min-width */
+}
+
+/* Add extra margin to the first button to move all three buttons right */
+#undoBtn {
+  margin-left: 30px; /* 10px (base) + 20px (extra) = 30px total */
+}
+
+/* Style for the Redo button */
+#redoBtn {
+  margin-left: 20px; /* Increased from 10px to 20px */
+}
+
+/* Style for the help button */
+#helpBtn {
+  border: 2px solid #888 !important;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  padding: 0;
+  margin: 0 auto 0 2px;
+  position: relative;
+  top: 0;
+  left: 2px;
+  font-size: 1.2em;
+}
+
+/* Add margin to Del3 button to align it with the others */
+#del3Btn {
+  margin-left: 10px;
+}
+
+#del3Btn {
+  font-size: 2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+#del3Btn {
+  color: red;
+  font-weight: bold;
+  font-size: 1.8em;
+}
+
+#helpBtn {
+  font-size: 2.0em; /* Slightly larger font */
+  font-weight: bold;
+  cursor: help;
+  padding: 1px; /* Add 1px padding to make it larger */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  width: 40px !important; /* 1px smaller in width */
+  height: 40px !important; /* 1px smaller in height */
+  margin: 0 0 0 4px !important; /* Moved 2px left */
+}
+
+#helpBtn::after {
+  white-space: pre;
+  text-align: left;
+  max-width: 300px;
+  width: max-content;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-left: 0;
+  margin-bottom: 5px;
+  font-weight: normal;
+  line-height: 1.4;
+}
+
+/* Framed buttons */
+.framed {
+  border: 2px solid #cccccc !important;
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure the emoji fills the button */
+#undoBtn::before, #redoBtn::before {
+  content: attr(data-icon);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  line-height: 1;
+}
+
+/* Tooltip styling */
+#undoBtn::after, #redoBtn::after, #del3Btn::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+#undoBtn:hover::after, #redoBtn:hover::after, #del3Btn:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.merged-btn {
+  grid-column: span 2;
+  width: 88px;
+}
+
+.merged-fg {
+  border: 2px solid #808080 !important; /* Grey frame */
+  grid-column: span 2;
+  margin-left: 26px; /* Increased from 16px to 26px for additional spacing */
+  width: 88px;
+  height: 40px;
+  font-size: 1em;
+  line-height: 40px;
+  text-align: center;
+  background: #f8f8f8;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Style for the Solid button */
+#solidButton {
+  margin-left: 16px !important;
+  position: relative;
+  top: -15px;
+  margin-bottom: -15px;
+  z-index: 1000;
+}
+
+/* Style for the Corner button (second button) */
+.merged-fg:has(+ .hidden-keep-space + .merged-fg) {
+  transform: translateY(0);
+  position: relative;
+  top: 0;
+  margin-top: 0;
+}
+
+/* Style for the Center button */
+#centerButton {
+  position: relative;
+  top: 10px; /* Decreased from 25px to 10px to move it 15px up */
+  margin-bottom: -10px; /* Adjusted to match the top value */
+  z-index: 1000;
+}
+
+/* Number pad */
+#numberPadStatic {
+  position: absolute;
+  top: calc(2 * (40px + 8px) + 8px);
+  left: -4px;
+  z-index: 10;
+  background: transparent;
+  width: 180px;
+}
+
+.number-pad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 50px);
+  grid-template-rows: repeat(3, 50px);
+  gap: 8px;
+}
+
+.number-pad-btn {
+  width: 50px;
+  height: 50px;
+  font-size: 1.4em;
+  background: #eee;
+  border: 1px solid #888;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  color: #333;
+}
+
+.number-pad-btn:hover {
+  background: #d0eaff;
+}
+
+/* Timer */
+#timer {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #333;
+}
+
+/* Pause button */
+#pauseBtn {
+  padding: 2px 8px;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1em;
+}
+
+#pauseBtn:hover {
+  background: #e0e0e0;
+}
+
+/* Clear Grid button */
+#clearGridBtn {
+  white-space: nowrap;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+#clearGridBtn:hover {
+  background: #e0e0e0;
+}
+
+/* Header */
+h2 {
+  color: #333;
+  margin: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  #container {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  #button-panel {
+    width: 100%;
+    max-width: 400px;
+  }
+}
+
+/* Karate Kid Center Block Animation */
+.karate-kid-container {
+  position: absolute;
+  pointer-events: none;
+  z-index: 10000; /* Bring animation to the very front */
+  overflow: visible;
+}
+
+.karate-kid {
+  position: absolute;
+  transform: translate(-50%, -50%) scale(0);
+  font-size: 2em; /* Start smaller, will scale up in animation */
+  z-index: 10000; /* Highest z-index for karate kid */
+  animation: karateKidPunchBig 2s ease-in-out;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+@keyframes karateKidPunchBig {
+  0% { 
+    transform: translate(-50%, -50%) scale(0) rotateZ(0deg) perspective(1000px) rotateX(0deg) rotateY(0deg);
+    opacity: 0;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  }
+  10% { 
+    transform: translate(-50%, -50%) scale(0.5) rotateZ(-5deg) perspective(1000px) rotateX(10deg) rotateY(-10deg);
+    opacity: 0.7;
+    text-shadow: 3px 3px 6px rgba(0,0,0,0.4);
+  }
+  25% { 
+    transform: translate(-50%, -50%) scale(1.2) rotateZ(5deg) perspective(1000px) rotateX(-5deg) rotateY(5deg);
+    opacity: 1;
+    text-shadow: 4px 4px 8px rgba(0,0,0,0.5);
+  }
+  40% { 
+    transform: translate(-50%, -50%) scale(2) rotateZ(-10deg) perspective(1000px) rotateX(15deg) rotateY(-15deg);
+    opacity: 1;
+    text-shadow: 6px 6px 12px rgba(0,0,0,0.6);
+  }
+  55% { 
+    transform: translate(-50%, -50%) scale(3.5) rotateZ(15deg) perspective(1000px) rotateX(-20deg) rotateY(20deg);
+    opacity: 1;
+    text-shadow: 8px 8px 16px rgba(0,0,0,0.7);
+  }
+  70% { 
+    transform: translate(-50%, -50%) scale(4.2) rotateZ(-5deg) perspective(1000px) rotateX(25deg) rotateY(-10deg);
+    opacity: 1;
+    text-shadow: 10px 10px 20px rgba(0,0,0,0.8);
+  }
+  85% { 
+    transform: translate(-50%, -50%) scale(3.8) rotateZ(0deg) perspective(1000px) rotateX(-10deg) rotateY(5deg);
+    opacity: 0.8;
+    text-shadow: 8px 8px 16px rgba(0,0,0,0.6);
+  }
+  100% { 
+    transform: translate(-50%, -50%) scale(0) rotateZ(0deg) perspective(1000px) rotateX(0deg) rotateY(0deg);
+    opacity: 0;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  }
+}
+
+/* Power wave effect radiating across the entire center block */
+.power-wave {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border: 4px solid #ff6b00;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  z-index: 9998; /* High z-index for power wave */
+  animation: powerWaveExpandBig 1.2s ease-out 0.5s;
+}
+
+@keyframes powerWaveExpandBig {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.9;
+    border-width: 4px;
+  }
+  25% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0.8;
+    border-width: 3px;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(6);
+    opacity: 0.6;
+    border-width: 2px;
+  }
+  75% {
+    transform: translate(-50%, -50%) scale(10);
+    opacity: 0.3;
+    border-width: 1px;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(15);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+/* Impact flash effect covering the entire center block */
+.impact-flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle at center, 
+    rgba(255, 215, 0, 0.8) 0%, 
+    rgba(255, 165, 0, 0.6) 25%, 
+    rgba(255, 140, 0, 0.4) 50%, 
+    rgba(255, 69, 0, 0.2) 75%, 
+    transparent 100%
+  );
+  opacity: 0;
+  z-index: 9997; /* High z-index for impact flash */
+  animation: impactFlashBig 0.4s ease-out 0.8s;
+  border-radius: 10px;
+}
+
+@keyframes impactFlashBig {
+  0% { 
+    opacity: 0; 
+    transform: scale(0.8);
+  }
+  40% { 
+    opacity: 1; 
+    transform: scale(1.1);
+  }
+  70% { 
+    opacity: 0.8; 
+    transform: scale(1);
+  }
+  100% { 
+    opacity: 0; 
+    transform: scale(1.2);
+  }
+}
+
+/* Add a subtle block shake effect */
+.center-block-shake {
+  animation: centerBlockShake 0.3s ease-in-out 0.8s;
+  z-index: 1; /* Keep cells at low z-index during shake */
+}
+
+/* Punch effect - fist coming toward viewer */
+.punch-effect {
+  position: absolute;
+  transform: translate(-50%, -50%) scale(0);
+  font-size: 3em;
+  z-index: 10001; /* Above karate kid */
+  animation: punchTowardViewer 1s ease-out 1s;
+  text-shadow: 4px 4px 8px rgba(0,0,0,0.5);
+  opacity: 0;
+}
+
+@keyframes punchTowardViewer {
+  0% {
+    transform: translate(-50%, -50%) scale(0) perspective(1000px) translateZ(-500px);
+    opacity: 0;
+  }
+  30% {
+    transform: translate(-50%, -50%) scale(2) perspective(1000px) translateZ(-200px);
+    opacity: 0.8;
+  }
+  60% {
+    transform: translate(-50%, -50%) scale(6) perspective(1000px) translateZ(100px);
+    opacity: 1;
+  }
+  80% {
+    transform: translate(-50%, -50%) scale(8) perspective(1000px) translateZ(200px);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(12) perspective(1000px) translateZ(500px);
+    opacity: 0;
+  }
+}
+
+@keyframes centerBlockShake {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  10% { transform: translateX(-1px) translateY(-1px); }
+  20% { transform: translateX(1px) translateY(1px); }
+  30% { transform: translateX(-1px) translateY(1px); }
+  40% { transform: translateX(1px) translateY(-1px); }
+  50% { transform: translateX(0) translateY(0); }
+  60% { transform: translateX(1px) translateY(-1px); }
+  70% { transform: translateX(-1px) translateY(1px); }
+  80% { transform: translateX(1px) translateY(1px); }
+  90% { transform: translateX(-1px) translateY(-1px); }
+}
+
+/* YBG cells - positioned behind WBG */
+.ybg {
+  display: none !important;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1; /* Behind WBG */
+}
+
+/* WBG cells - positioned above YBG */
+.wbg {
+  position: relative;
+  z-index: 2; /* Above YBG */
+}
+
+/* Show YBG cells when they have the 'show' class */
+.ybg.show {
+  display: flex !important;
+}
+
+/* Grading buttons container */
+#button-panel > div:first-child {
+  position: relative;
+  width: 280px; /* Width of a single button */
+  height: 44px; /* Height of the button */
+}
+
+/* Base styles for both grading buttons */
+#puzzleGradingsBtn,
+#puzzleGradingsBtn2 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  margin: 0;
+  padding: 8px 20px;
+  z-index: 1;
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Hide Yellow Belt Button by default */
+#puzzleGradingsBtn2 {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Show Yellow Belt Button when it has the 'show' class */
+#puzzleGradingsBtn2.show {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  z-index: 2;
+}
+
+/* When YBG is shown, hide WBG */
+#puzzleGradingsBtn2.show ~ #puzzleGradingsBtn {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* When WBG is active, ensure YBG is hidden */
+#puzzleGradingsBtn.belt-btn-active {
+  opacity: 1;
+  visibility: visible;
+  z-index: 2;
+}
+
+#puzzleGradingsBtn.belt-btn-active ~ div #puzzleGradingsBtn2 {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Light grey frame for specific buttons */
+.merged-btn.framed,
+#del1Btn.framed,
+#del3Btn.framed,
+.side-btn[title="BvC"].framed {
+  border: 2px solid #cccccc !important;
+  position: relative;
+  z-index: 1;
+}
