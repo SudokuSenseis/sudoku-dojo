@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sensei's Sudoku Puzzle</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { font-family: Arial, sans-serif; }
+    
+    .belt-btn-active {
+      box-shadow: 0 0 0 3px #0066ff !important;
+      position: relative;
+      z-index: 10;
+    }
+    #container {
+      display: flex;
+      align-items: flex-start;
+      gap: 40px;
+      margin: 20px;
+    }
+    #sudoku-grid {
+      display: grid;
+      grid-template-columns: repeat(9, 40px);
+      grid-template-rows: repeat(9, 40px);
+      background: #eee;
+      padding: 4px;
+      border: 4px solid #000;
+      box-sizing: border-box;
+      width: fit-content;
+      margin-top: 6%;
+    }
+    .cell {
+      width: 40px;
+      height: 40px;
+      background: #fff;
+      border: 1px solid #222;
+      box-sizing: border-box;
+      text-align: center;
+      font-size: 1.5em;
+      line-height: 40px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .subcell {
+      position: absolute;
+      width: 33.33%;
+      height: 33.33%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.5em;
+      box-sizing: border-box;
+      pointer-events: none;
+    }
+    
+    /* Styles for merged center cells */
+    .merged-center {
+      position: absolute;
+      top: 33.33%;
+      left: 0;
+      width: 100%;
+      height: 33.33%;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      justify-content: center;
+      font-size: 0.5em;
+      box-sizing: border-box;
+      pointer-events: none;
+    }
+    
+    .center-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 33.33%;
+      height: 100%;
+      box-sizing: border-box;
+    }
+    
+    /* Position each subcell */
+    .sc1 { top: 0; left: 0; }
+    .sc2 { top: 0; left: 33.33%; }
+    .sc3 { top: 0; right: 0; }
+    .sc4 { top: 33.33%; left: 0; }
+    .sc5 { top: 33.33%; left: 33.33%; }
+    .sc6 { top: 33.33%; right: 0; }
+    .sc7 { bottom: 0; left: 0; }
+    .sc8 { bottom: 0; left: 33.33%; }
+    .sc9 { bottom: 0; right: 0; }
+    .cell.selected {
+      border: 2px solid #0078d7 !important;
+      background: #e6f0ff;
+    }
+    .cell.block-bottom { border-bottom: 3px solid #000 !important; }
+    .cell.block-right { border-right: 3px solid #000 !important; }
+    .cell.block-top { border-top: 3px solid #000 !important; }
+    .cell.block-left { border-left: 3px solid #000 !important; }
+
+    #button-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+    }
+
+    #color-buttons {
+      display: flex;
+      justify-content: flex-start;
+      gap: 8px;
+      padding: 8px 0;
+      margin-bottom: 8px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: transparent;
+      z-index: 5;
+      height: 46px;
+    }
+    
+    #button-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      min-height: 100%;
+      padding-top: 46px; /* Space for the color buttons */
+    }
+    
+    #main-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr) 48px 48px;
+      grid-template-rows: repeat(8, 1fr);
+      gap: 8px;
+      position: relative;
+      margin-top: 0; /* Ensure no margin at the top */
+    }
+    .color-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid #333;
+      cursor: pointer;
+    }
+
+    #main-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr) 48px 48px;
+      grid-template-rows: repeat(8, 1fr);
+      gap: 8px;
+      position: relative;
+    }
+
+    .side-btn {
+      font-size: 1em;
+      cursor: pointer;
+      margin: 0;
+      position: relative;
+      height: 40px;
+      border: 2px solid transparent;
+      transition: border-color 0.2s;
+    }
+    
+    .side-btn.selected {
+      border-color: #0078d7;
+      box-shadow: 0 0 0 2px #0078d7;
+    }
+    .side-btn.f-col, .side-btn.g-col {
+      margin-left: 16px;
+      width: 40px;
+    }
+    .merged-btn {
+      grid-column: span 2;
+      width: 88px;
+    }
+    .merged-fg {
+      grid-column: span 2;
+      margin-left: 16px;
+      width: 88px;
+      transform: translateY(24px);
+    }
+    .hidden-keep-space {
+      visibility: hidden;
+    }
+
+    #numberPadStatic {
+      position: absolute;
+      top: calc(2 * (40px + 8px) + 8px);
+      left: -4px;
+      z-index: 10;
+      background: transparent;
+      width: 180px;
+    }
+    .number-pad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 50px);
+      grid-template-rows: repeat(3, 50px);
+      gap: 8px;
+    }
+    .number-pad-btn {
+      width: 50px;
+      height: 50px;
+      font-size: 1.4em;
+      background: #eee;
+      border: 1px solid #888;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .number-pad-btn:hover {
+      background: #d0eaff;
+    }
+  </style>
+</head>
+<body>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin: 20px; position: relative; gap: 20px;">
+    <h2 style="margin: 0;">Sensei's Sudoku Puzzle</h2>
+    <div style="position: absolute; left: 440px; top: 13px; display: flex; align-items: center; gap: 10px;">
+      <div id="timer" style="font-size: 1.2em; font-weight: bold;">00:00</div>
+      <button id="pauseBtn" class="btn" style="padding: 2px 8px;">⏸️</button>
+    </div>
+  </div>
+  <div id="container" style="padding-top: 10px; position: relative;">
+    <div id="sudoku-grid" style="position: relative; margin-top: 10px; background-color: #eee;"></div>
+    
+    <!-- Text Overlay for Pause Screen -->
+    <div id="pauseTextOverlay" style="
+      display: none;
+      position: absolute;
+      top: 29px;
+      left: 9px;
+      width: 392px;
+      height: 392px;
+      background-color: white;
+      border: 4px solid #000;
+      box-sizing: border-box;
+      z-index: 1000;
+      padding: 20px;
+      overflow-y: auto;
+      font-family: Arial, sans-serif;
+    ">
+      <!-- CUSTOMIZABLE TEXT AREA - Edit the content below -->
+      <div id="pauseTextContent">
+        <h2 style="color: #2c5aa0; margin-top: 0;">Game Paused</h2>
+        <p style="font-size: 16px; color: #333;">
+          <strong>Tips & Strategies:</strong>
+        </p>
+        <ul style="color: #555; font-size: 14px;">
+          <li>Look for <span style="color: #e74c3c; font-weight: bold;">obvious singles</span> first</li>
+          <li>Use the <span style="color: #27ae60;">elimination method</span> for complex cells</li>
+          <li>Check for <span style="color: #8e44ad; font-style: italic;">hidden pairs</span> in rows, columns, and boxes</li>
+        </ul>
+        
+        <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #007bff;">
+          <p style="margin: 0; font-size: 14px; color: #495057;">
+            <strong style="color: #007bff;">Remember:</strong> Every Sudoku puzzle has a unique solution. Take your time and think logically!
+          </p>
+        </div>
+        
+        <div style="margin-top: 20px;">
+          <h3 style="color: #dc3545; font-size: 18px;">Quick Shortcuts:</h3>
+          <div style="font-size: 12px; color: #666;">
+            <p><kbd style="background: #eee; padding: 2px 4px; border-radius: 3px;">1-9</kbd> Insert number</p>
+            <p><kbd style="background: #eee; padding: 2px 4px; border-radius: 3px;">A+1-9</kbd> Corner marks</p>
+            <p><kbd style="background: #eee; padding: 2px 4px; border-radius: 3px;">Z+1-9</kbd> Center marks</p>
+          </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+          <p style="font-size: 20px; color: #28a745; font-weight: bold; margin: 0;">
+            Good Luck! 🧩
+          </p>
+        </div>
+      </div>
+      <!-- END CUSTOMIZABLE TEXT AREA -->
+    </div>
+    
+    <div id="button-panel">
+      <!-- Gradings Buttons - positioned above color buttons -->
+      <div style="position: absolute; top: 44px; left: 5px; right: 0; z-index: 10;">
+        <!-- Grading buttons container -->
+        <div style="position: relative; width: 280px; height: 44px;">
+          <!-- White Belt Grading Button -->
+          <button id="puzzleGradingsBtn" class="side-btn belt-btn" style="border: 2px solid #888; border-radius: 4px; 
+            background-color: white; font-weight: bold; position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+            title="Your Gradings to get your new color belt">
+            <div id="puzzleGradingsStripeContainer" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1;"></div>
+            <span style="position: relative; z-index: 2; padding: 0 5px; color: transparent; user-select: none;">White Belt Grading</span>
+          </button>
+          
+          <!-- Yellow Belt Grading Button -->
+          <button id="puzzleGradingsBtn2" class="side-btn belt-btn" style="border: 2px solid #888; border-radius: 4px; 
+            background-color: #FFFF00; font-weight: bold; position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+            title="Yellow Belt Grading">
+            <div id="puzzleGradingsStripeContainer2" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 1; background-color: #FFFF00;"></div>
+            <span style="position: relative; z-index: 2; padding: 0 5px; color: transparent; user-select: none;">Yellow Belt Grading</span>
+          </button>
+        </div>
+      </div>
+      
+      <div id="color-buttons">
+        <div class="color-btn" style="background-color: #FFFFFF;"></div>
+        <div class="color-btn" style="background-color: #FFFF00;"></div>
+        <div class="color-btn" style="background-color: #FFA500;"></div>
+        <div class="color-btn" style="background-color: #00FF00;"></div>
+        <div class="color-btn" style="background-color: #0000FF;"></div>
+        <div class="color-btn" style="background-color: #9966CC;"></div>
+        <div class="color-btn" style="background-color: #CD7F32;"></div>
+        <div class="color-btn" style="background-color: #000000;"></div>
+      </div>
+
+      <!-- Clear Grid button - positioned outside the grid -->
+      <button id="clearGridBtn" class="side-btn" 
+              style="position: absolute !important; 
+                     right: 80px !important; 
+                     top: -49px !important; 
+                     white-space: nowrap;
+                     width: 34px;
+                     height: 34px;
+                     display: flex;
+                     align-items: center;
+                     justify-content: center;
+                     border: 2px solid #888;
+                     border-radius: 4px;
+                     font-size: 0.9em;
+                     z-index: 15;
+                     background-color: #FFFF00;"
+              title="Clear Grid and reset timer to 00:00">
+        CG
+      </button>
+
+      <!-- Set1 button - positioned to the right of CG button -->
+      <button id="set1Btn" class="side-btn" 
+              style="position: absolute !important; 
+                     right: 40px !important; 
+                     top: -49px !important; 
+                     white-space: nowrap;
+                     width: 34px;
+                     height: 34px;
+                     display: flex;
+                     align-items: center;
+                     justify-content: center;
+                     border: 2px solid #888;
+                     border-radius: 4px;
+                     font-size: 1.1em;
+                     z-index: 15;
+                     background-color: lightgreen;"
+              title="Settings">
+        ⚙️
+      </button>
+
+      <!-- Set2 button - positioned to the right of Set1 button -->
+      <button id="set2Btn" class="side-btn" 
+              style="position: absolute !important; 
+                     right: 0px !important; 
+                     top: -49px !important; 
+                     white-space: nowrap;
+                     width: 34px;
+                     height: 34px;
+                     display: flex;
+                     align-items: center;
+                     justify-content: center;
+                     border: 2px solid #888;
+                     border-radius: 4px;
+                     font-size: 1.1em;
+                     font-weight: bold;
+                     z-index: 15;
+                     background-color: lightcoral;"
+              title="Full Screen Mode">
+        ⛶
+      </button>
+
+      <div id="main-buttons" style="position: relative;">
+        <button class="side-btn merged-btn hidden-keep-space" id="saveBtn">Save</button>
+        <button class="side-btn merged-btn hidden-keep-space" id="openB1Btn">Open B1</button>
+        
+        <button class="side-btn hidden-keep-space">F1</button>
+        <button class="side-btn hidden-keep-space">G1</button>
+
+        <button class="side-btn merged-btn framed">Color Cell</button>
+        <button class="side-btn merged-btn framed">CPM</button>
+        <button class="side-btn f-col framed" id="del1Btn" style="margin: 0 0 0 3px;">Del1</button>
+        <button class="side-btn f-col" id="helpBtn" style="margin: 0 0 0 6px;" title="Keyboard Shortcuts:
+
+Number Keys (1-9): Insert number in selected cell
+Delete: Clear selected cell
+Backspace: Undo last moves
+Arrow Keys: Move selection
+A + Number (1-9): Add/remove corner mark Toggle corner mark mode
+Z + Number (1-9): Add/remove center mark Toggle center mark mode
+C: Toggle color mode
+R: Redo
+S: Select multiple Cells
+Ctrl+Click: Add cells to selection (clear by clicking unselected cell)">
+  ?
+</button>
+
+        <button class="side-btn hidden-keep-space">B3</button>
+        <button class="side-btn hidden-keep-space">C3</button>
+        <button class="side-btn hidden-keep-space">D3</button>
+        <button class="side-btn hidden-keep-space">E3</button>
+        <button id="solidButton" class="side-btn merged-fg" style="position: relative; top: -10px; margin-bottom: -10px; z-index: 1000;">Solid</button>
+
+        <button class="side-btn hidden-keep-space">B4</button>
+        <button class="side-btn hidden-keep-space">C4</button>
+        <button class="side-btn hidden-keep-space">D4</button>
+        <button class="side-btn hidden-keep-space">E4</button>
+        <button class="side-btn merged-fg">Corner</button>
+
+        <button class="side-btn hidden-keep-space">B5</button>
+        <button class="side-btn hidden-keep-space">C5</button>
+        <button class="side-btn hidden-keep-space">D5</button>
+        <button class="side-btn hidden-keep-space">E5</button>
+        <button id="centerButton" class="side-btn merged-fg">Center</button>
+
+        <button class="side-btn hidden-keep-space">B6</button>
+        <button class="side-btn hidden-keep-space">C6</button>
+        <button class="side-btn hidden-keep-space">D6</button>
+        <button class="side-btn hidden-keep-space">E6</button>
+        <button class="side-btn hidden-keep-space">F6</button>
+        <button class="side-btn hidden-keep-space">G6</button>
+
+        <button class="side-btn merged-btn framed" style="margin-top: -7px;">G Lines</button>
+        <button class="side-btn merged-btn framed" style="margin-top: -7px;">R Lines</button>
+        <button class="side-btn f-col framed" style="margin: -7px 0 0 4px; width: 48px; min-width: 48px; padding: 0;">Del2</button>
+        <div style="position: relative; display: inline-block;">
+          <button class="side-btn g-col framed" style="margin: -7px 0 0 6px; width: 41px !important; min-width: 41px !important; position: relative; z-index: 1;">CP</button>
+          <button id="ecBtn" class="side-btn g-col" style="position: absolute; top: -386px; left: -134px; width: 41px !important; min-width: 41px !important; background-color: white; border: 2px solid #cccccc !important; border-radius: 4px; z-index: 2; font-size: 1.2em; font-weight: bold;" title="Error Counter (If the counter is 0 you will not promote)">5</button>
+        </div>
+
+        <button class="side-btn merged-btn" id="undoBtn" title="Undo" data-icon="↩️" style="margin: -7px 0 0 4px;"></button>
+        <button class="side-btn merged-btn" id="redoBtn" title="Redo" data-icon="↪️" style="margin: -7px 0 0 -46px;"></button>
+        <button class="side-btn f-col" id="del3Btn" title="Delete numbers in Cell" style="color: red; font-weight: bold; margin: -7px 0 0 -71px;">✕</button>
+        <div style="position: relative; display: inline-block;">
+          <button class="side-btn g-col framed" style="margin: -7px 0 0 6px;" title="BvC">BvC</button>
+          <button class="side-btn g-col framed" style="position: absolute; top: -7px; left: -68px; width: 100%; height: 40px; font-size: 1em; line-height: 40px; padding: 0;" title="Mis">Mis</button>
+        </div>
+
+        <div id="numberPadStatic" style="margin-left: 10px;">
+          <div class="number-pad-grid">
+            <button class="number-pad-btn">7</button>
+            <button class="number-pad-btn">8</button>
+            <button class="number-pad-btn">9</button>
+            <button class="number-pad-btn">4</button>
+            <button class="number-pad-btn">5</button>
+            <button class="number-pad-btn">6</button>
+            <button class="number-pad-btn">1</button>
+            <button class="number-pad-btn">2</button>
+            <button class="number-pad-btn">3</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div style="background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; border-radius: 8px; width: 80%; max-width: 600px; position: relative;">
+      <span id="closeSettings" style="color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1;">&times;</span>
+      <h2 style="margin-top: 0;">Settings</h2>
+      
+      <!-- Game Settings Section -->
+      <div style="margin-bottom: 20px;">
+        <h3 style="color: #333; border-bottom: 2px solid #eee; padding-bottom: 5px;">Game Settings</h3>
+        
+        <div style="margin: 15px 0;">
+          <label style="display: flex; align-items: center; margin-bottom: 10px;">
+            <input type="checkbox" id="showTimer" checked style="margin-right: 10px;">
+            <span>Show Timer</span>
+          </label>
+          
+          <label style="display: flex; align-items: center; margin-bottom: 10px;">
+            <input type="checkbox" id="autoSave" checked style="margin-right: 10px;">
+            <span>Auto Save Progress</span>
+          </label>
+          
+          <label style="display: flex; align-items: center; margin-bottom: 10px;">
+            <input type="checkbox" id="highlightConflicts" checked style="margin-right: 10px;">
+            <span>Highlight Conflicts</span>
+          </label>
+          
+          <label style="display: flex; align-items: center; margin-bottom: 10px;">
+            <input type="checkbox" id="smartPencilMarks" checked style="margin-right: 10px;">
+            <span>Smart Pencil Mark Logic</span>
+            <small style="color: #666; margin-left: 20px; display: block; font-size: 11px;">When multiple cells selected: only remove pencil marks if ALL cells have them</small>
+          </label>
+          
+          <div style="margin-bottom: 15px;">
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+              <span style="margin-right: 10px;">Highlight Pencil Marks:</span>
+              <div class="toggle-container" style="display: flex; border: 1px solid #ccc; border-radius: 15px; overflow: hidden;">
+                <button id="highlightPencilMarksOn" class="toggle-option" style="padding: 5px 15px; border: none; background: #4CAF50; color: white; cursor: pointer;">ON</button>
+                <button id="highlightPencilMarksOff" class="toggle-option" style="padding: 5px 15px; border: none; background: #f1f1f1; color: #666; cursor: pointer;">OFF</button>
+              </div>
+            </div>
+            <small style="color: #666; display: block; font-size: 11px; margin-left: 0;">When double-clicking a number, also highlight matching pencil marks</small>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Display Settings Section -->
+      <div style="margin-bottom: 20px;">
+        <h3 style="color: #333; border-bottom: 2px solid #eee; padding-bottom: 5px;">Display Settings</h3>
+        
+        <div style="margin: 15px 0;">
+          <label style="display: block; margin-bottom: 10px;">
+            <span>Grid Size:</span>
+            <select id="gridSize" style="margin-left: 10px; padding: 5px;">
+              <option value="small">Small</option>
+              <option value="medium" selected>Medium</option>
+              <option value="large">Large</option>
+            </select>
+          </label>
+          
+          <label style="display: block; margin-bottom: 10px;">
+            <span>Theme:</span>
+            <select id="theme" style="margin-left: 10px; padding: 5px;">
+              <option value="light" selected>Light</option>
+              <option value="dark">Dark</option>
+              <option value="blue">Blue</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      
+      <!-- Difficulty Settings Section -->
+      <div style="margin-bottom: 20px;">
+        <h3 style="color: #333; border-bottom: 2px solid #eee; padding-bottom: 5px;">Difficulty Settings</h3>
+        
+        <div style="margin: 15px 0;">
+          <label style="display: block; margin-bottom: 10px;">
+            <span>Default Difficulty:</span>
+            <select id="defaultDifficulty" style="margin-left: 10px; padding: 5px;">
+              <option value="easy">Easy</option>
+              <option value="medium" selected>Medium</option>
+              <option value="hard">Hard</option>
+              <option value="expert">Expert</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div style="text-align: center; margin-top: 30px;">
+        <button id="saveSettings" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;">Save Settings</button>
+        <button id="resetSettings" style="background-color: #f44336; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;">Reset to Default</button>
+        <button id="cancelSettings" style="background-color: #888; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  
+  <script>
+    // Function to initialize belt grading functionality
+    function initializeBeltGrading(buttonId, containerId, buttonColor, backgroundColor = 'white') {
+      const gradingsBtn = document.getElementById(buttonId);
+      const gradingsContainer = document.getElementById(containerId);
+      
+      if (!gradingsBtn || !gradingsContainer) return;
+      
+      let stripeCount = 0;
+      const totalHalfStripes = 20; // 10 stripes * 2 (top and bottom)
+      
+      // Track if this is the WBG button
+      const isWBG = buttonId === 'puzzleGradingsBtn';
+      
+      // Initialize the container with empty stripes
+      function initializeStripes() {
+        let stripesHTML = '';
+        const stripeWidth = 7; // Width of each stripe in %
+        const gap = 3; // Gap between stripes in % (same as border thickness)
+        
+        for (let i = 0; i < 10; i++) {
+          const left = i * (stripeWidth + gap); // Calculate position with gap
+          
+          // Black outline for the stripe
+          stripesHTML += `
+            <div class="stripe-outline" style="
+              position: absolute;
+              top: 0;
+              left: ${left}%;
+              width: ${stripeWidth}%;
+              height: 100%;
+              background: ${buttonId === 'puzzleGradingsBtn2' ? '#000000' : 'black'};
+              z-index: 1;
+              pointer-events: none;
+            ">
+              <!-- Top half fill -->
+              <div class="stripe-top" style="
+                position: absolute;
+                top: 0;
+                left: 2px;
+                right: 2px;
+                height: 50%;
+                background: ${buttonId === 'puzzleGradingsBtn2' ? '#FFFF00' : backgroundColor};
+                z-index: 2;
+              "></div>
+              <!-- Bottom half fill -->
+              <div class="stripe-bottom" style="
+                position: absolute;
+                bottom: 0;
+                left: 2px;
+                right: 2px;
+                height: 50%;
+                background: ${buttonId === 'puzzleGradingsBtn2' ? '#FFFF00' : backgroundColor};
+                z-index: 2;
+              "></div>
+              <!-- Horizontal line in the middle -->
+              <div style="
+                position: absolute;
+                top: 50%;
+                left: 2px;
+                right: 2px;
+                height: 1px;
+                background: black;
+                transform: translateY(-50%);
+                z-index: 3;
+              "></div>
+            </div>`;
+        }
+        
+        gradingsContainer.innerHTML = stripesHTML;
+      }
+      
+      // Update the stripes based on stripe count
+      function updateStripes() {
+        const stripes = gradingsContainer.querySelectorAll('.stripe-outline');
+        const isYBG = buttonId === 'puzzleGradingsBtn2';
+        const bgColor = isYBG ? '#FFFF00' : 'white';
+        
+        // Set all stripes to their base color first
+        stripes.forEach(stripe => {
+          const top = stripe.querySelector('.stripe-top');
+          const bottom = stripe.querySelector('.stripe-bottom');
+          if (top) top.style.background = bgColor;
+          if (bottom) bottom.style.background = bgColor;
+        });
+        
+        // Fill stripes up to current stripe count
+        for (let i = 0; i < 10; i++) {
+          const stripe = stripes[i];
+          if (!stripe) continue;
+          
+          const top = stripe.querySelector('.stripe-top');
+          const bottom = stripe.querySelector('.stripe-bottom');
+          
+          const halfStripesToFill = Math.max(0, Math.min(2, Math.floor((stripeCount - (i * 2)) / 1)));
+          
+          if (halfStripesToFill >= 1) top.style.background = buttonColor;
+          if (halfStripesToFill >= 2) bottom.style.background = buttonColor;
+        }
+      }
+      
+      // Initialize the stripes
+      initializeStripes();
+      
+      // Track click state for double-click detection
+      let lastClickTime = 0;
+      let clickCounter = 0;
+      let clickTimeout = null;
+      const clickLockoutDuration = 300; // 300ms for double-click detection
+      
+      // Handle button click with improved double-click detection
+      gradingsBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const currentTime = new Date().getTime();
+        const timeSinceLastClick = currentTime - lastClickTime;
+        
+        // If it's a potential double-click
+        if (timeSinceLastClick < clickLockoutDuration) {
+          // Double-click detected
+          console.log('Double-click detected on', isWBG ? 'WBG' : 'YBG');
+          clearTimeout(clickTimeout);
+          
+          if (stripeCount > 0) {
+            // Remove a stripe if there are any
+            stripeCount--;
+            console.log('Removed stripe, count:', stripeCount);
+            updateStripes();
+          } else if (!isWBG) {
+            // If YBG has no red stripes, switch to WBG
+            console.log('Switching to WBG from YBG');
+            setActiveBeltButton('puzzleGradingsBtn');
+            // Reset the click counter to prevent any further actions
+            clickCounter = 0;
+            return; // Exit early to prevent further processing
+          } else {
+            console.log('WBG clicked with no stripes to remove');
+          }
+        } else {
+          // New click sequence - handle single click after timeout
+          clickCounter = 1;
+          
+          clickTimeout = setTimeout(() => {
+            if (clickCounter === 1) {
+              if (stripeCount < totalHalfStripes) {
+                stripeCount++;
+                updateStripes();
+              } else if (isWBG) {
+                // If WBG is full and clicked, switch to YBG
+                setActiveBeltButton('puzzleGradingsBtn2');
+              }
+            }
+          }, clickLockoutDuration);
+        }
+        
+        lastClickTime = currentTime;
+      });
+      
+      // Prevent double-click from selecting text
+      gradingsBtn.addEventListener('mousedown', (e) => {
+        if (e.detail > 1) e.preventDefault();
+      });
+    }
+    
+    // Store the current timeout ID for potential cancellation
+    let switchTimeout = null;
+    
+    // Function to set active belt button with delay for click handling
+    function setActiveBeltButton(activeButtonId, isImmediate = false) {
+      console.log('Setting active button:', activeButtonId, 'immediate:', isImmediate);
+      
+      // Clear any pending switch timeout to prevent flash
+      if (switchTimeout) {
+        clearTimeout(switchTimeout);
+        switchTimeout = null;
+      }
+      
+      // Get references to both buttons
+      const wbgBtn = document.getElementById('puzzleGradingsBtn');
+      const ybgBtn = document.getElementById('puzzleGradingsBtn2');
+      
+      // Get all WBG and YBG cells
+      const wbgCells = document.querySelectorAll('.wbg');
+      const ybgCells = document.querySelectorAll('.ybg');
+      
+      // Function to perform the actual switch
+      const performSwitch = () => {
+        // If switching to YBG
+        if (activeButtonId === 'puzzleGradingsBtn2') {
+          // Hide WBG button and cells first (immediate)
+          if (wbgBtn) {
+            wbgBtn.classList.remove('belt-btn-active');
+            wbgBtn.classList.remove('show');
+          }
+          
+          wbgCells.forEach(cell => {
+            cell.style.display = 'none';
+          });
+          
+          // Then show YBG button and cells
+          if (ybgBtn) {
+            ybgBtn.classList.add('belt-btn-active');
+            ybgBtn.classList.add('show');
+          }
+          
+          ybgCells.forEach(cell => {
+            cell.style.display = 'flex';
+          });
+        } 
+        // If switching to WBG
+        else if (activeButtonId === 'puzzleGradingsBtn') {
+          // Hide YBG button and cells first (immediate)
+          if (ybgBtn) {
+            ybgBtn.classList.remove('belt-btn-active');
+            ybgBtn.classList.remove('show');
+          }
+          
+          ybgCells.forEach(cell => {
+            cell.style.display = 'none';
+          });
+          
+          // Then show WBG button and cells
+          if (wbgBtn) {
+            wbgBtn.classList.add('belt-btn-active');
+            wbgBtn.classList.add('show');
+          }
+          
+          wbgCells.forEach(cell => {
+            cell.style.display = 'flex';
+          });
+        }
+      };
+      
+      // If immediate flag is set, perform switch immediately
+      if (isImmediate) {
+        performSwitch();
+      } else {
+        // Otherwise, store the timeout ID and wait 500ms before performing the switch
+        switchTimeout = setTimeout(performSwitch, 500);
+      }
+      
+      // Error handling for invalid button ID
+      if (!document.getElementById(activeButtonId)) {
+        console.error('Could not find button with ID:', activeButtonId);
+      }
+    }
+    
+    // Initialize belt gradings when the DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize error counter display
+      if (typeof updateErrorCounterDisplay === 'function') {
+        updateErrorCounterDisplay();
+      }
+      
+      // Initialize White Belt Grading (red stripes)
+      initializeBeltGrading('puzzleGradingsBtn', 'puzzleGradingsStripeContainer', 'red');
+      
+      // Initialize Yellow Belt Grading (red stripes on yellow background)
+      initializeBeltGrading('puzzleGradingsBtn2', 'puzzleGradingsStripeContainer2', 'red', '#FFFF00');
+      
+      // Hide YBG cells by default
+      const ybgCells = document.querySelectorAll('.ybg');
+      ybgCells.forEach(cell => {
+        cell.style.display = 'none';
+      });
+      
+      // Set initial active button (WBG)
+      setActiveBeltButton('puzzleGradingsBtn');
+      
+      // Function to handle WBG click with auto-switch to YBG when complete
+      const wbgBtn = document.getElementById('puzzleGradingsBtn');
+      const ybgBtn = document.getElementById('puzzleGradingsBtn2');
+      
+      wbgBtn.addEventListener('click', () => {
+        // Check if WBG is complete (20 half stripes)
+        const wbgContainer = document.getElementById('puzzleGradingsStripeContainer');
+        const wbgStripes = wbgContainer.querySelectorAll('.stripe-outline');
+        let filledHalfStripes = 0;
+        
+        wbgStripes.forEach(stripe => {
+          const top = stripe.querySelector('.stripe-top');
+          const bottom = stripe.querySelector('.stripe-bottom');
+          if (top && top.style.background === 'red') filledHalfStripes++;
+          if (bottom && bottom.style.background === 'red') filledHalfStripes++;
+        });
+        
+        // If WBG is complete, switch to YBG, otherwise keep WBG active
+        if (filledHalfStripes >= 20) {
+          setActiveBeltButton('puzzleGradingsBtn2');
+          ybgBtn.focus();
+        } else {
+          setActiveBeltButton('puzzleGradingsBtn');
+        }
+      });
+      
+      // No need for separate YBG click handler as it's already handled in initializeBeltGrading
+    });
+  </script>
+  
+  <script>
+    // Function to load a puzzle from an SDK string
+    function loadPuzzleFromSdkString(sdkString) {
+      try {
+        // Clear existing puzzle
+        document.querySelectorAll('.cell').forEach(cell => {
+          cell.textContent = '';
+          cell.classList.remove('preset');
+          cell.style.color = '';
+        });
+        
+        // Fill in the puzzle
+        const cells = document.querySelectorAll('.cell');
+        for (let i = 0; i < Math.min(sdkString.length, 81); i++) {
+          const digit = sdkString[i];
+          if (digit >= '1' && digit <= '9') {
+            cells[i].textContent = digit;
+            cells[i].classList.add('preset');
+            // Let the CSS handle the color based on the preset class
+            cells[i].style.fontWeight = 'bold';
+          }
+        }
+        
+        // Hide the import section if a puzzle was successfully loaded from URL
+        const importSection = document.getElementById('sdkImportSection');
+        if (importSection) {
+          importSection.style.display = 'none';
+        }
+        
+        // Check for any conflicts in the loaded puzzle
+        if (window.checkForConflicts) {
+          checkForConflicts();
+        }
+        
+        // Start the timer when puzzle is loaded
+        if (window.isTimerStarted !== undefined && !window.isTimerStarted && window.startTimer) {
+          // Use a small delay to ensure DOM elements are ready
+          setTimeout(() => {
+            window.isTimerStarted = true;
+            window.startTimer();
+            // Update pause button to show pause state
+            const pauseBtn = document.getElementById('pauseBtn');
+            if (pauseBtn) {
+              pauseBtn.textContent = '⏸️';
+              pauseBtn.title = 'Pause';
+              pauseBtn.style.backgroundColor = '';
+              pauseBtn.style.color = '';
+            }
+          }, 100);
+        }
+        
+        return true;
+      } catch (error) {
+        console.error('Error loading puzzle:', error);
+        return false;
+      }
+    }
+    
+    // Load puzzle immediately when the script runs
+    (function() {
+      // Check for puzzle in URL hash (e.g., #puzzle=53007...)
+      const hash = window.location.hash;
+      if (hash.startsWith('#puzzle=')) {
+        const sdkString = hash.substring(8); // Remove '#puzzle=' from the start
+        console.log('Loading puzzle from URL:', sdkString);
+        loadPuzzleFromSdkString(sdkString);
+      } else {
+        // For testing: Load a default puzzle if none in URL
+        console.log('No puzzle in URL, loading default puzzle');
+        loadPuzzleFromSdkString('000240010000050702000107360059000000000368000000000120048502000702090000010036000');
+      }
+    })();
+  </script>
+  
+  <script>
+    // Settings Modal functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const settingsBtn = document.querySelector('button[title="Settings"]');
+      const settingsModal = document.getElementById('settingsModal');
+      const closeSettings = document.getElementById('closeSettings');
+      const saveSettings = document.getElementById('saveSettings');
+      const resetSettings = document.getElementById('resetSettings');
+      const cancelSettings = document.getElementById('cancelSettings');
+      const highlightPencilMarksOnBtn = document.getElementById('highlightPencilMarksOn');
+      const highlightPencilMarksOffBtn = document.getElementById('highlightPencilMarksOff');
+      
+      if (!settingsBtn || !settingsModal) return;
+      
+      // Function to update the toggle button appearance
+      function updateHighlightPencilMarksToggle() {
+        const isOn = getHighlightPencilMarksSetting();
+        if (isOn) {
+          highlightPencilMarksOnBtn.style.background = '#4CAF50';
+          highlightPencilMarksOnBtn.style.color = 'white';
+          highlightPencilMarksOffBtn.style.background = '#f1f1f1';
+          highlightPencilMarksOffBtn.style.color = '#666';
+        } else {
+          highlightPencilMarksOnBtn.style.background = '#f1f1f1';
+          highlightPencilMarksOnBtn.style.color = '#666';
+          highlightPencilMarksOffBtn.style.background = '#f44336';
+          highlightPencilMarksOffBtn.style.color = 'white';
+        }
+      }
+      
+      // Toggle button click handlers
+      highlightPencilMarksOnBtn.addEventListener('click', function() {
+        if (!getHighlightPencilMarksSetting()) {
+          updateHighlightPencilMarksSetting(true);
+          updateHighlightPencilMarksToggle();
+          // Force update the global state and apply changes
+          highlightPencilMarksState = true;
+          if (window.sudokuSettings) {
+            window.sudokuSettings.highlightPencilMarks = true;
+          }
+          document.body.classList.add('highlight-pencil-marks');
+        }
+      });
+      
+      highlightPencilMarksOffBtn.addEventListener('click', function() {
+        if (getHighlightPencilMarksSetting()) {
+          updateHighlightPencilMarksSetting(false);
+          updateHighlightPencilMarksToggle();
+          // Force update the global state and apply changes
+          highlightPencilMarksState = false;
+          if (window.sudokuSettings) {
+            window.sudokuSettings.highlightPencilMarks = false;
+          }
+          document.body.classList.remove('highlight-pencil-marks');
+        }
+      });
+      
+      // Initialize the toggle state and global variable
+      highlightPencilMarksState = getHighlightPencilMarksSetting();
+      updateHighlightPencilMarksToggle();
+      
+      // Ensure the body class is in sync with the setting
+      if (highlightPencilMarksState) {
+        document.body.classList.add('highlight-pencil-marks');
+      } else {
+        document.body.classList.remove('highlight-pencil-marks');
+      }
+      
+      // Open settings modal
+      settingsBtn.addEventListener('click', function() {
+        // Update the toggle UI based on current state
+        updateHighlightPencilMarksToggle(highlightPencilMarksState);
+        
+        // Load and update other settings
+        const savedSettings = localStorage.getItem('sudokuSettings');
+        if (savedSettings) {
+          try {
+            const settings = JSON.parse(savedSettings);
+            // Update all form fields except highlightPencilMarks
+            updateSettingsForm(settings);
+            // Ensure the toggle reflects the current state
+            updateHighlightPencilMarksToggle(highlightPencilMarksState);
+          } catch (e) {
+            console.error('Error loading settings:', e);
+          }
+        }
+        settingsModal.style.display = 'block';
+      });
+      
+      // Close settings modal
+      function closeModal() {
+        settingsModal.style.display = 'none';
+      }
+      
+      closeSettings.addEventListener('click', closeModal);
+      cancelSettings.addEventListener('click', closeModal);
+      
+      // Close modal when clicking outside
+      window.addEventListener('click', function(event) {
+        if (event.target === settingsModal) {
+          closeModal();
+        }
+      });
+      
+      // Save settings
+      saveSettings.addEventListener('click', function() {
+        try {
+          // Ensure we have the latest state
+          const currentSettings = JSON.parse(localStorage.getItem('sudokuSettings') || '{}');
+          
+          // Update all settings from the form
+          const settings = {
+            ...currentSettings, // Keep any existing settings
+            showTimer: document.getElementById('showTimer').checked,
+            autoSave: document.getElementById('autoSave').checked,
+            highlightConflicts: document.getElementById('highlightConflicts').checked,
+            smartPencilMarks: document.getElementById('smartPencilMarks').checked,
+            highlightPencilMarks: highlightPencilMarksState, // Use our tracked state
+            gridSize: document.getElementById('gridSize').value,
+            theme: document.getElementById('theme').value,
+            defaultDifficulty: document.getElementById('defaultDifficulty').value
+          };
+          
+          // Debug log
+          console.log('Saving settings:', settings);
+          
+          // Save to localStorage
+          localStorage.setItem('sudokuSettings', JSON.stringify(settings));
+          
+          // Update the global settings object
+          window.sudokuSettings = settings;
+          
+          // Apply settings
+          applySettings(settings);
+          
+          // Show confirmation
+          alert('Settings saved successfully!');
+          closeModal();
+        } catch (e) {
+          console.error('Error saving settings:', e);
+          alert('Error saving settings. Please try again.');
+        }
+      });
+      
+      // Reset settings to default
+      resetSettings.addEventListener('click', function() {
+        if (confirm('Are you sure you want to reset all settings to default?')) {
+          const defaultSettings = {
+            showTimer: true,
+            autoSave: true,
+            highlightConflicts: true,
+            smartPencilMarks: true,
+            highlightPencilMarks: false,
+            gridSize: 'medium',
+            theme: 'light',
+            defaultDifficulty: 'medium'
+          };
+          
+          // Update form fields
+          updateSettingsForm(defaultSettings);
+          
+          // Save to localStorage
+          localStorage.setItem('sudokuSettings', JSON.stringify(defaultSettings));
+          
+          // Apply settings
+          applySettings(defaultSettings);
+          
+          alert('Settings reset to default!');
+        }
+      });
+      
+      // Load current settings from localStorage
+      function loadCurrentSettings() {
+        const savedSettings = localStorage.getItem('sudokuSettings');
+        if (savedSettings) {
+          const settings = JSON.parse(savedSettings);
+          updateSettingsForm(settings);
+        } else {
+          // Initialize with default settings if none exist
+          const defaultSettings = {
+            showTimer: true,
+            autoSave: true,
+            highlightConflicts: true,
+            smartPencilMarks: true,
+            highlightPencilMarks: false,
+            gridSize: 'medium',
+            theme: 'light',
+            defaultDifficulty: 'medium'
+          };
+          localStorage.setItem('sudokuSettings', JSON.stringify(defaultSettings));
+          updateSettingsForm(defaultSettings);
+        }
+      }
+      
+      // Update form fields with settings values
+      function updateSettingsForm(settings) {
+        // Don't update highlightPencilMarksState here - it's managed separately
+        // to prevent it from being overridden when the form is updated
+        
+        // Update all other settings
+        document.getElementById('showTimer').checked = settings.showTimer !== false; // Default to true
+        document.getElementById('autoSave').checked = settings.autoSave !== false; // Default to true
+        document.getElementById('highlightConflicts').checked = settings.highlightConflicts !== false; // Default to true
+        document.getElementById('smartPencilMarks').checked = settings.smartPencilMarks !== false; // Default to true
+        
+        // Update the toggle button UI based on the current state
+        updateHighlightPencilMarksToggle(highlightPencilMarksState);
+        
+        // Update other form fields
+        document.getElementById('gridSize').value = settings.gridSize || 'medium';
+        document.getElementById('theme').value = settings.theme || 'light';
+        document.getElementById('defaultDifficulty').value = settings.defaultDifficulty || 'medium';
+      }
+      
+      // Apply settings to the game
+      function applySettings(settings) {
+        // Timer visibility
+        const timerContainer = document.querySelector('[style*="margin-left: 100px"]');
+        if (timerContainer) {
+          timerContainer.style.display = settings.showTimer ? 'flex' : 'none';
+        }
+        
+        // Theme application (basic implementation)
+        if (settings.theme === 'dark') {
+          document.body.style.backgroundColor = '#2c2c2c';
+          document.body.style.color = '#ffffff';
+        } else if (settings.theme === 'blue') {
+          document.body.style.backgroundColor = '#e3f2fd';
+        } else {
+          document.body.style.backgroundColor = '';
+          document.body.style.color = '';
+        }
+        
+        // Grid size (basic implementation)
+        const sudokuGrid = document.getElementById('sudoku-grid');
+        if (sudokuGrid) {
+          if (settings.gridSize === 'small') {
+            sudokuGrid.style.transform = 'scale(0.8)';
+          } else if (settings.gridSize === 'large') {
+            sudokuGrid.style.transform = 'scale(1.2)';
+          } else {
+            sudokuGrid.style.transform = 'scale(1)';
+          }
+        }
+        
+        // Store settings globally for other functions to access
+        window.sudokuSettings = settings;
+      }
+      
+      // Load and apply settings on page load
+      function initializeSettings() {
+        try {
+          const savedSettings = localStorage.getItem('sudokuSettings');
+          let settings;
+          
+          if (savedSettings) {
+            settings = JSON.parse(savedSettings);
+            // Ensure all settings have default values if not present
+            settings = {
+              showTimer: settings.showTimer !== false, // default true
+              autoSave: settings.autoSave !== false,   // default true
+              highlightConflicts: settings.highlightConflicts !== false, // default true
+              smartPencilMarks: settings.smartPencilMarks !== false,     // default true
+              highlightPencilMarks: settings.highlightPencilMarks === true, // default false
+              gridSize: settings.gridSize || 'medium',
+              theme: settings.theme || 'light',
+              defaultDifficulty: settings.defaultDifficulty || 'medium'
+            };
+          } else {
+            // Initialize with default settings if none exist
+            settings = {
+              showTimer: true,
+              autoSave: true,
+              highlightConflicts: true,
+              smartPencilMarks: true,
+              highlightPencilMarks: false, // Default to OFF
+              gridSize: 'medium',
+              theme: 'light',
+              defaultDifficulty: 'medium'
+            };
+            localStorage.setItem('sudokuSettings', JSON.stringify(settings));
+          }
+          
+          // Update the global settings object
+          window.sudokuSettings = settings;
+          
+          // Initialize the toggle state
+          highlightPencilMarksState = settings.highlightPencilMarks === true;
+          
+          // Apply all settings
+          applySettings(settings);
+          
+          // Update the UI to match the loaded settings
+          updateSettingsForm(settings);
+          updateHighlightPencilMarksToggle(highlightPencilMarksState);
+          
+          return settings;
+          
+        } catch (e) {
+          console.error('Error initializing settings:', e);
+          // Fall back to default settings on error
+          const defaultSettings = {
+            showTimer: true,
+            autoSave: true,
+            highlightConflicts: true,
+            smartPencilMarks: true,
+            highlightPencilMarks: false,
+            gridSize: 'medium',
+            theme: 'light',
+            defaultDifficulty: 'medium'
+          };
+          localStorage.setItem('sudokuSettings', JSON.stringify(defaultSettings));
+          return defaultSettings;
+        }
+      }
+      
+      // Initialize settings when the page loads
+      initializeSettings();
+    });
+  </script>
+  
+  <script>
+    // Full Screen functionality for Set2 button
+    document.addEventListener('DOMContentLoaded', function() {
+      const fullScreenBtn = document.getElementById('set2Btn');
+      
+      if (!fullScreenBtn) return;
+      
+      // Function to toggle full screen
+      function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+          // Enter full screen
+          document.documentElement.requestFullscreen().catch(err => {
+            console.log(`Error attempting to enable fullscreen: ${err.message}`);
+          });
+        } else {
+          // Exit full screen
+          document.exitFullscreen().catch(err => {
+            console.log(`Error attempting to exit fullscreen: ${err.message}`);
+          });
+        }
+      }
+      
+      // Add click event listener
+      fullScreenBtn.addEventListener('click', toggleFullScreen);
+      
+      // Optional: Update button appearance based on fullscreen state
+      document.addEventListener('fullscreenchange', function() {
+        if (document.fullscreenElement) {
+          fullScreenBtn.style.backgroundColor = 'lightgreen';
+          fullScreenBtn.title = 'Exit Full Screen Mode';
+        } else {
+          fullScreenBtn.style.backgroundColor = 'lightcoral';
+          fullScreenBtn.title = 'Full Screen Mode';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
